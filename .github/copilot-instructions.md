@@ -1,35 +1,41 @@
-## Project purpose
-- This repository implements a local proof-of-concept Splunk AI SRE assistant.
-- Prefer minimal, safe, incremental changes.
-- Keep the design easy to run on a laptop.
+# Splunk AI SRE Agent Repository Instructions
 
-## Safety boundaries
-- Default to read-only behavior against Splunk.
-- Never introduce autonomous production-changing behavior unless explicitly requested.
-- Do not add actions that restart services, disable searches, change Splunk configs, or modify production routing unless a human asks for that specifically.
+This repository is a local proof-of-concept for an **agentic Splunk SRE investigator**.
 
-## Engineering rules
-- Prefer deterministic Python scripts over one-off shell pipelines.
-- Reuse existing helpers in `shared/` before adding new utility modules.
-- Keep file formats stable and machine-readable.
-- Write structured JSON for snapshots and incidents.
-- Keep markdown incident reports concise and operator-friendly.
+## Primary goal
 
-## Code style
-- Use Python 3.12+.
-- Add docstrings to public functions.
-- Use type hints.
-- Fail with clear error messages.
-- Avoid unnecessary dependencies.
+Use alert context plus gathered evidence to reason about the next best probe. Do **not** assume a fixed search chain unless the user explicitly asks for one.
 
-## Workflow
-- Plan changes before editing.
-- Make iterative changes in small chunks.
-- After code changes, run focused tests or linters when practical.
-- Preserve the current repo layout unless there is a strong reason to change it.
+## Working model
 
-## Incident logic expectations
-- Separate collection, detection, and reporting concerns.
-- Keep detectors explainable.
-- Prefer explicit thresholds and evidence lists over opaque scoring.
-- Always include recommended next steps in incident outputs.
+- Treat the incoming alert or anomaly as a starting point, not a conclusion.
+- Build and refine hypotheses as evidence arrives.
+- Prefer broad and cheap probes before narrow and expensive probes.
+- Avoid repeating equivalent probes unless the case state shows a real reason to re-run them.
+- Update the case file after each meaningful step.
+- Separate facts, hypotheses, and recommended actions clearly.
+
+## Tooling expectations
+
+- Prefer the existing Python tool modules or MCP tools over inventing ad hoc shell pipelines.
+- Keep Splunk access read-only unless a future policy file explicitly permits an action.
+- Keep probe logic reusable. A probe is an investigation primitive, not a case-specific workflow.
+
+## Case handling
+
+- Case files under `cases/open/` and `cases/closed/` are the source of operational memory.
+- Append concise investigation steps to the case file rather than relying on chat history.
+- Never write chain-of-thought into case files. Write operational summaries only.
+
+## Safety constraints
+
+- Do not modify Splunk configs, restart services, disable searches, or change routing.
+- Do not add hidden side effects to probe functions.
+- Escalate when confidence is low, blast radius is unclear, or a runbook crosses into L3 / platform engineering territory.
+
+## Coding expectations
+
+- Keep changes iterative and focused.
+- Maintain type hints and docstrings.
+- Prefer plain Python and explicit data structures over clever abstractions.
+- Preserve the local-first design.
