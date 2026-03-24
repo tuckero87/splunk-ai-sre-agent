@@ -1,16 +1,30 @@
-# Splunk AI SRE Agent
+# Splunk AI SRE Agent v0.1 Starter
 
-Proof-of-concept repo starter for a **Splunk AI SRE assistant** that runs locally and uses **GitHub Copilot CLI** as the operator-facing harness.
+A local, minimal, **agentic** proof-of-concept for Splunk incident triage using **GitHub Copilot CLI** as the reasoning harness.
 
-The repo is intentionally small:
+This starter is intentionally shaped around:
 
-- **Collectors** gather a few Splunk operational signals.
-- **Detectors** convert those signals into incident candidates.
-- **Reports** render machine- and human-friendly incident outputs.
-- **Runbooks** give the agent and operator a safe next-step path.
-- **State** stores snapshots and incident artifacts locally.
+- **alert intake**
+- **hypothesis-driven investigation**
+- **bounded probe tools**
+- **case memory**
+- **operator-grade triage output**
 
-This starter is designed for a read-only, low-risk first pass. It focuses on three incident families:
+It is **not** a workflow runner that assumes a fixed investigation path.
+
+## Philosophy
+
+The repo separates responsibilities cleanly:
+
+- **Copilot CLI custom agent** does the reasoning.
+- **Python tools** provide bounded probe capabilities.
+- **Case files** persist investigation state outside the model context window.
+- **Runbooks** provide guardrails and escalation guidance.
+- **MCP server** is the upgrade path for structured tool access.
+
+## Current scope
+
+v0.1 focuses on three incident families:
 
 1. Search performance degradation
 2. Indexing / ingestion degradation
@@ -19,18 +33,42 @@ This starter is designed for a read-only, low-risk first pass. It focuses on thr
 ## Repo layout
 
 ```text
-.github/
-  agents/
-collectors/
-config/
-detectors/
-prompts/
-reports/
-runbooks/
-shared/
-state/
-tests/
-tools/
+splunk-ai-sre-agent/
+├── .github/
+│   ├── copilot-instructions.md
+│   └── agents/
+│       └── splunk-sre-agent.agent.md
+├── config/
+│   ├── env.example
+│   ├── splunk_targets.yaml
+│   └── agent_policy.yaml
+├── tools/
+│   ├── common.py
+│   ├── case_state.py
+│   ├── triage_case.py
+│   ├── splunk_search.py
+│   ├── splunk_health.py
+│   ├── splunk_entities.py
+│   ├── splunk_introspection.py
+│   ├── splunk_forwarding.py
+│   └── splunk_baselines.py
+├── mcp/
+│   └── splunk_mcp_server.py
+├── cases/
+│   ├── open/
+│   ├── closed/
+│   └── templates/
+├── prompts/
+│   ├── triage_system.md
+│   ├── hypothesis_loop.md
+│   └── stop_conditions.md
+├── runbooks/
+│   ├── search_perf.md
+│   ├── indexing.md
+│   └── forwarding.md
+├── reports/
+│   └── render_case_report.py
+└── tests/
 ```
 
 ## Quick start
@@ -38,115 +76,81 @@ tools/
 ### 1. Create a virtual environment
 
 ```bash
-python3 -m venv .venv
+python -m venv .venv
 source .venv/bin/activate
+pip install -e .[dev,mcp]
+```
+
+If you do not want MCP yet:
+
+```bash
 pip install -e .[dev]
 ```
 
-### 2. Create local environment variables
+### 2. Configure your environment
+
+Copy the example env file:
 
 ```bash
 cp config/env.example .env
-set -a
-source .env
-set +a
 ```
 
-### 3. Edit target and rule config
+Edit `config/splunk_targets.yaml` and populate your target details.
 
-Start with:
-
-- `config/splunk_targets.yaml`
-- `config/rules.yaml`
-
-The sample SPL is intentionally conservative and may need tuning for your Splunk version and logging patterns.
-
-### 4. Collect signals and detect incidents
+### 3. Create a case from an alert
 
 ```bash
-./tools/collect_all.sh
-./tools/detect_all.sh
-./tools/triage_latest.sh
+python -m tools.triage_case   --alert "Search latency high on prod search heads"   --target default
 ```
 
-## Running with GitHub Copilot CLI
+This creates a case file in `cases/open/` and seeds:
+- candidate fault domains
+- initial hypotheses
+- suggested next probes
 
-This repo includes:
-
-- repository-wide instructions in `.github/copilot-instructions.md`
-- a project-scoped custom agent profile in `.github/agents/splunk-sre-agent.agent.md`
-
-Example usage:
+### 4. Render a markdown summary
 
 ```bash
-copilot
+python -m reports.render_case_report cases/open/<case-file>.json
 ```
 
-Then in the interactive session:
+### 5. Use with Copilot CLI
+
+Start Copilot CLI in this repository and select the custom agent:
 
 ```text
 /agent splunk-sre-agent
-Collect current Splunk signals, run all detectors, and summarize any active incidents.
 ```
 
-Or programmatically:
+Good starter prompts:
 
-```bash
-copilot --agent splunk-sre-agent \
-  --allow-tool='shell(python:*)' \
-  --allow-tool='shell(bash:*)' \
-  --allow-tool='write(state/*)' \
-  --prompt "Collect current Splunk signals, run all detectors, and summarize any active incidents."
+```text
+Triage the latest case in cases/open. Use the case file, prompts, and runbooks to decide the next best probe. Do not assume a fixed workflow.
 ```
 
-## Security model for v0.1
+```text
+Review the alert in the newest case file, update the hypotheses, choose the highest-value next probe, and explain why.
+```
 
-Use a **read-only Splunk service account** where possible.
+## Suggested dev loop
 
-This starter assumes:
-
-- read-only REST access to health/search endpoints
-- read-only SPL against operational indexes used by the collectors
-- no write-back into Splunk
-- all mutable outputs stay inside `state/`
-
-## Default flow
-
-1. Collectors write raw normalized snapshots into `state/snapshots/`
-2. Detectors read the latest snapshots and create JSON incidents in `state/incidents/`
-3. Reports render markdown summaries for the latest incidents
-4. Copilot CLI reads those artifacts and helps with triage and next steps
+1. Generate or paste an alert.
+2. Create a case with `tools.triage_case`.
+3. Let Copilot CLI reason over the case file.
+4. Run bounded probes through Python modules or the MCP server.
+5. Append findings to the case.
+6. Render a clean markdown triage note.
 
 ## Notes
 
-- The detector logic is intentionally simple and deterministic.
-- The sample SPL is a starting point, not a final production content pack.
-- The repo is structured so you can later add MCP, GitHub issue creation, richer baselines, or approval-gated actions without redesigning the whole thing.
+- The SPL in the probe modules is intentionally conservative starter content. Tune it for your estate.
+- The MCP server is optional in v0.1, but the repo is laid out so you can switch from file/tool usage to structured MCP tool calling later.
+- The code defaults to **read-only** investigation. It does not perform production changes.
 
-## Roadmap
+## Development
 
-v0.1
+Run tests:
 
-Local repo, local scripts, Copilot CLI harness, three detectors, markdown incident output.
-
-v0.2
-
-Add:
-
-baseline comparison
-GitHub issue output
-richer runbooks
-more structured confidence scoring
-v0.3
-
-Add:
-
-MCP wrapper around collectors and detectors
-approval-gated write actions
-separate specialist agents:
-search-sre
-indexing-sre
-forwarding-sre
-v1 candidate
-
-Package it as a controlled internal tool with policy, RBAC, logging, and approved integrations.
+```bash
+python -m unittest discover -s tests -v
+```

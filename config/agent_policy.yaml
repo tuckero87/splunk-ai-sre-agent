@@ -1,0 +1,29 @@
+max_probe_steps: 6
+initial_probe_budget: 2
+allow_write_actions: false
+prefer_broad_probes_first: true
+prefer_low_cost_probes_first: true
+stop_conditions:
+  min_confidence_to_stop: 0.80
+  stop_on_clear_handoff: true
+  stop_on_policy_boundary: true
+  stop_on_probe_budget: true
+
+allowed_probes:
+  - health_overview
+  - recent_internal_errors
+  - search_scheduler_pressure
+  - top_search_offenders
+  - indexing_pipeline_stress
+  - source_data_gap
+  - forwarder_error_signals
+  - resource_pressure
+  - baseline_lookup
+
+approval_required_for:
+  - disable_saved_search
+  - restart_service
+  - change_workload_rules
+  - modify_outputs_conf
+  - push_deployment_change
+  - update_cluster_settings

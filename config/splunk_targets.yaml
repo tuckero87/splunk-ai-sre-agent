@@ -1,0 +1,18 @@
+default:
+  base_url: ${SPLUNK_DEFAULT_BASE_URL}
+  auth:
+    username: ${SPLUNK_DEFAULT_USERNAME}
+    password: ${SPLUNK_DEFAULT_PASSWORD}
+    token: ${SPLUNK_DEFAULT_TOKEN}
+  verify_ssl: ${SPLUNK_DEFAULT_VERIFY_SSL}
+  namespace: ${SPLUNK_DEFAULT_NAMESPACE}
+  app: search
+
+# Example additional target:
+# prod:
+#   base_url: https://splunk-prod.example.com:8089
+#   auth:
+#     token: ${SPLUNK_PROD_TOKEN}
+#   verify_ssl: true
+#   namespace: search
+#   app: search
