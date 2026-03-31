@@ -30,47 +30,6 @@ v0.1 focuses on three incident families:
 2. Indexing / ingestion degradation
 3. Forwarding / data gap detection
 
-## Repo layout
-
-```text
-splunk-ai-sre-agent/
-├── .github/
-│   ├── copilot-instructions.md
-│   └── agents/
-│       └── splunk-sre-agent.agent.md
-├── config/
-│   ├── env.example
-│   ├── splunk_targets.yaml
-│   └── agent_policy.yaml
-├── tools/
-│   ├── common.py
-│   ├── case_state.py
-│   ├── triage_case.py
-│   ├── splunk_search.py
-│   ├── splunk_health.py
-│   ├── splunk_entities.py
-│   ├── splunk_introspection.py
-│   ├── splunk_forwarding.py
-│   └── splunk_baselines.py
-├── mcp/
-│   └── splunk_mcp_server.py
-├── cases/
-│   ├── open/
-│   ├── closed/
-│   └── templates/
-├── prompts/
-│   ├── triage_system.md
-│   ├── hypothesis_loop.md
-│   └── stop_conditions.md
-├── runbooks/
-│   ├── search_perf.md
-│   ├── indexing.md
-│   └── forwarding.md
-├── reports/
-│   └── render_case_report.py
-└── tests/
-```
-
 ## Quick start
 
 ### 1. Create a virtual environment
